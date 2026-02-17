@@ -386,11 +386,6 @@
 
         // Open bottom sheet with topics for this level
         const pool = activeLevel==='ALL' ? TOPICS : TOPICS.filter(t=>t.level===activeLevel);
-        const sheetItems = pool.map((t, i) => ({
-          label: t.title,
-          translation: t.tags ? t.tags.join(', ') : '',
-          index: filteredList.indexOf(t) >= 0 ? filteredList.indexOf(t) : i,
-        }));
         // Re-apply filters first then open sheet with correct indices
         const currentPool = filteredList.length ? filteredList : pool;
         const items = currentPool.map((t, i) => ({
@@ -399,6 +394,7 @@
           index: i,
         }));
         window.SharedApp?.openLevelSheet(
+          btn,
           items,
           (idx) => { currentIdx = idx; renderCard(); updateDrawer(); },
           `${activeLevel === 'ALL' ? 'All' : activeLevel} — ${items.length} topics`

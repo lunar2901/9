@@ -166,40 +166,79 @@
 
   function esc(s) { return String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
 
-  function openLevelSheet(items, onSelect, title) {
-    // Remove any existing sheet
-    document.getElementById('_lsheet')?.remove();
+  function openLevelSheet(anchorEl, items, onSelect, title) {
+    // Remove any existing panel
+    document.getElementById('_ldropdown')?.remove();
 
-    const sheet = document.createElement('div');
-    sheet.id = '_lsheet';
+    if (!items.length) return;
 
-    const listHtml = items.map(it => `
-      <button class="lsheet-item" data-idx="${it.index ?? 0}" type="button">
-        <span class="lsheet-word">${esc(it.label)}</span>
-        ${it.translation ? `<span class="lsheet-trans">${esc(it.translation)}</span>` : ''}
-      </button>`).join('');
+    const panel = document.createElement('div');
+    panel.id = '_ldropdown';
+    panel.style.cssText = `
+      position: fixed;
+      z-index: 1400;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.18);
+      max-height: 320px;
+      min-width: 220px;
+      max-width: 320px;
+      overflow-y: auto;
+      padding: 6px 0;
+    `;
 
-    sheet.innerHTML = `
-      <div class="lsheet-backdrop"></div>
-      <div class="lsheet-panel">
-        <div class="lsheet-header">
-          <span class="lsheet-title">${esc(title)}</span>
-          <button class="lsheet-close icon-btn" type="button" aria-label="Close">✕</button>
-        </div>
-        <div class="lsheet-body">${listHtml}</div>
-      </div>`;
-
-    document.body.appendChild(sheet);
-
-    const close = () => sheet.remove();
-    sheet.querySelector('.lsheet-backdrop').addEventListener('click', close);
-    sheet.querySelector('.lsheet-close').addEventListener('click', close);
-    sheet.querySelectorAll('.lsheet-item').forEach(btn => {
-      btn.addEventListener('click', () => {
-        onSelect(parseInt(btn.dataset.idx, 10));
-        close();
+    // Build list HTML
+    items.forEach(it => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.style.cssText = `
+        display: flex; align-items: baseline; gap: 8px;
+        width: 100%; text-align: left;
+        padding: 8px 14px; border: none; background: none;
+        cursor: pointer; font-family: inherit;
+      `;
+      btn.innerHTML = `<span style="font-size:14px;font-weight:700;color:#111;">${esc(it.label)}</span>
+        ${it.translation ? `<span style="font-size:12px;color:#888;">${esc(it.translation)}</span>` : ''}`;
+      btn.addEventListener('mouseover', () => btn.style.background = '#f5f5f5');
+      btn.addEventListener('mouseout',  () => btn.style.background = 'none');
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onSelect(it.index ?? 0);
+        panel.remove();
+        backdrop.remove();
       });
+      panel.appendChild(btn);
     });
+
+    // Transparent backdrop to close on outside click
+    const backdrop = document.createElement('div');
+    backdrop.id = '_ldropdown_backdrop';
+    backdrop.style.cssText = 'position:fixed;inset:0;z-index:1399;';
+    backdrop.addEventListener('click', () => { panel.remove(); backdrop.remove(); });
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(panel);
+
+    // Position directly under the anchor button
+    const rect = anchorEl.getBoundingClientRect();
+    const panelWidth = 260;
+    let left = rect.left;
+    let top  = rect.bottom + 6;
+
+    // Prevent going off right edge
+    if (left + panelWidth > window.innerWidth - 8) {
+      left = window.innerWidth - panelWidth - 8;
+    }
+    // Prevent going off bottom edge — flip above if needed
+    const panelHeight = Math.min(320, items.length * 38 + 12);
+    if (top + panelHeight > window.innerHeight - 8) {
+      top = rect.top - panelHeight - 6;
+    }
+
+    panel.style.left = `${Math.max(8, left)}px`;
+    panel.style.top  = `${Math.max(8, top)}px`;
+    panel.style.width = `${panelWidth}px`;
   }
 
   window.SharedApp = { openModal, closeModal, getSaved, setSaved, getMeta, setMeta, setSaveBtnState, wireSaveButtons, initSavedModal, initSearchModal, registerPageItems, openLevelSheet };

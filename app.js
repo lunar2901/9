@@ -195,9 +195,14 @@ buildAllDropdowns();
 registerPageItems([...buildAllPageItems(), ...buildCrossPageItems()]);
 initSearchModal((item) => {
   if (item.level !== currentLevel) {
-    // switch level first, then jump
+    // Switch level silently — find and activate the button without .click()
     const btn = document.querySelector(`.level-btn[data-level="${item.level}"]`);
-    if (btn) btn.click();
+    if (btn) {
+      levelBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    currentLevel = item.level;
+    renderCurrent();
     setTimeout(() => focusApi?.jumpTo(item.index), 50);
   } else {
     focusApi?.jumpTo(item.index);
@@ -216,9 +221,10 @@ levelBtns.forEach(btn => {
       renderCurrent();
     }
 
-    // Open bottom sheet with word list for this level
+    // Open positioned dropdown under this button
     const items = buildPageItems(level);
     window.SharedApp.openLevelSheet(
+      btn,
       items,
       (idx) => { if (level !== currentLevel) { currentLevel = level; renderCurrent(); } setTimeout(() => focusApi?.jumpTo(idx), 40); },
       `${level.toUpperCase()} — ${items.length} verbs`

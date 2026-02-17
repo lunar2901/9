@@ -2225,86 +2225,8 @@ body.modal-open #grammarTopBar{ visibility:hidden; }
   margin-left: 8px;
 }
 
-/* ===== Level word-list bottom sheet (replaces overflow-clipped dropdowns) ===== */
-.lsheet-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.35);
-  z-index: 1200;
-  animation: lsheet-fade-in .18s ease;
-}
-
-.lsheet-panel {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1201;
-  background: #fff;
-  border-radius: 18px 18px 0 0;
-  max-height: 70vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 -8px 32px rgba(0,0,0,.18);
-  animation: lsheet-slide-up .22s ease;
-}
-
-@keyframes lsheet-fade-in {
-  from { opacity: 0; } to { opacity: 1; }
-}
-@keyframes lsheet-slide-up {
-  from { transform: translateY(100%); } to { transform: translateY(0); }
-}
-
-.lsheet-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 16px 10px;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-}
-
-.lsheet-title {
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: .04em;
-}
-
-.lsheet-body {
-  overflow-y: auto;
-  padding: 8px 10px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.lsheet-item {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  width: 100%;
-  text-align: left;
-  padding: 9px 12px;
-  border: none;
-  border-radius: 9px;
-  background: none;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background .1s;
-}
-.lsheet-item:hover, .lsheet-item:active { background: #f5f5f5; }
-
-.lsheet-word {
-  font-size: 14px;
-  font-weight: 700;
-  color: #111;
-}
-
-.lsheet-trans {
-  font-size: 12px;
-  color: #888;
-}
+/* ===== Level dropdown panel: positioned under button via JS ===== */
+/* Rendered by openLevelSheet() in shared.js with inline styles — no extra CSS needed */
 
 /* ===== Save button: filled state ===== */
 .save-btn.saved {
