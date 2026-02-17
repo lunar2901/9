@@ -5,6 +5,22 @@ import verbsA2 from './js/verbs-db-a2.js';
 import verbsB1 from './js/verbs-db-b1.js';
 import verbsB2 from './js/verbs-db-b2.js';
 import verbsC1 from './js/verbs-db-c1.js';
+// Cross-page DB imports so global search works from this page without needing to visit others first
+import nounsA1 from './js/nouns-db-a1.js';
+import nounsA2 from './js/nouns-db-a2.js';
+import nounsB1 from './js/nouns-db-b1.js';
+import nounsB2 from './js/nouns-db-b2.js';
+import nounsC1 from './js/nouns-db-c1.js';
+import adjectivesA1 from './js/adjectives-db-a1.js';
+import adjectivesA2 from './js/adjectives-db-a2.js';
+import adjectivesB1 from './js/adjectives-db-b1.js';
+import adjectivesB2 from './js/adjectives-db-b2.js';
+import adjectivesC1 from './js/adjectives-db-c1.js';
+import adverbsA1 from './js/adverbs-db-a1.js';
+import adverbsA2 from './js/adverbs-db-a2.js';
+import adverbsB1 from './js/adverbs-db-b1.js';
+import adverbsB2 from './js/adverbs-db-b2.js';
+import adverbsC1 from './js/adverbs-db-c1.js';
 
 const verbsDB = { a1: verbsA1, a2: verbsA2, b1: verbsB1, b2: verbsB2, c1: verbsC1 };
 const levelBtns = document.querySelectorAll('.level-btn');
@@ -135,17 +151,38 @@ function injectVerbCardStylesOnce() {
 /* ========================= Build page items for global search ========================= */
 
 function buildPageItems(level) {
-
   const list = verbsDB[level] || [];
   return list.map((v, i) => ({
     id: `verbs:${level}:${getVerbBase(v)}`,
     label: getVerbBase(v),
     translation: getTranslations(v).slice(0, 2).join(', '),
-    index: i,
-    level,
-    category: 'Verbs',
-    url: 'index.html',
+    index: i, level, category: 'Verbs', url: 'index.html',
   }));
+}
+
+function buildAllPageItems() {
+  return Object.keys(verbsDB).flatMap(l => buildPageItems(l));
+}
+
+// Cross-page item builders so search finds all words without visiting other pages
+function buildCrossPageItems() {
+  const nounDB = { a1: nounsA1, a2: nounsA2, b1: nounsB1, b2: nounsB2, c1: nounsC1 };
+  const adjDB  = { a1: adjectivesA1, a2: adjectivesA2, b1: adjectivesB1, b2: adjectivesB2, c1: adjectivesC1 };
+  const advDB  = { a1: adverbsA1, a2: adverbsA2, b1: adverbsB1, b2: adverbsB2, c1: adverbsC1 };
+
+  const nouns = Object.keys(nounDB).flatMap(l => (nounDB[l]||[]).map((n,i) => ({
+    id: `nouns:${l}:${n.word}`, label: n.word||'—', translation: (n.translations||[])[0]||'',
+    index: i, level: l, category: 'Nouns', url: 'nouns.html',
+  })));
+  const adjs = Object.keys(adjDB).flatMap(l => (adjDB[l]||[]).map((a,i) => ({
+    id: `adjectives:${l}:${a.word}`, label: a.word||'—', translation: (a.translations||[])[0]||'',
+    index: i, level: l, category: 'Adjectives', url: 'adjectives.html',
+  })));
+  const advs = Object.keys(advDB).flatMap(l => (advDB[l]||[]).map((a,i) => ({
+    id: `adverbs:${l}:${a.word}`, label: a.word||'—', translation: (a.translations||[])[0]||'',
+    index: i, level: l, category: 'Adverbs', url: 'adverbs.html',
+  })));
+  return [...nouns, ...adjs, ...advs];
 }
 
 /* ========================= Init ========================= */
@@ -155,7 +192,7 @@ updateCounts();
 buildAllDropdowns();
 
 // Register page items and init search for current level
-registerPageItems(buildAllPageItems());
+registerPageItems([...buildAllPageItems(), ...buildCrossPageItems()]);
 initSearchModal((item) => {
   if (item.level !== currentLevel) {
     // switch level first, then jump
@@ -169,35 +206,24 @@ initSearchModal((item) => {
 
 levelBtns.forEach(btn => {
   btn.addEventListener('click', (e) => {
-    // If tapping inside dropdown, let dropdown-item handler run
-    if (e.target && e.target.closest && e.target.closest('.level-dropdown')) return;
-
     const level = btn.dataset.level;
-    const isActive = btn.classList.contains('active');
 
-    // Close other dropdowns
-    levelBtns.forEach(b => { if (b !== btn) b.classList.remove('open'); });
-
-    // On mobile: tap active level toggles dropdown open/close
-    if (isActive) {
-      btn.classList.toggle('open');
-      return;
+    // Switch level if not already active
+    if (!btn.classList.contains('active')) {
+      levelBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLevel = level;
+      renderCurrent();
     }
 
-    // Switch level and open its list
-    levelBtns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentLevel = level;
-    renderCurrent();
-    btn.classList.add('open');
+    // Open bottom sheet with word list for this level
+    const items = buildPageItems(level);
+    window.SharedApp.openLevelSheet(
+      items,
+      (idx) => { if (level !== currentLevel) { currentLevel = level; renderCurrent(); } setTimeout(() => focusApi?.jumpTo(idx), 40); },
+      `${level.toUpperCase()} — ${items.length} verbs`
+    );
   });
-});
-
-// Close dropdown when tapping outside
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.level-section')) {
-    levelBtns.forEach(b => b.classList.remove('open'));
-  }
 });
 
 

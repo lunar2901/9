@@ -166,7 +166,43 @@
 
   function esc(s) { return String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
 
-  window.SharedApp = { openModal, closeModal, getSaved, setSaved, getMeta, setMeta, setSaveBtnState, wireSaveButtons, initSavedModal, initSearchModal, registerPageItems };
+  function openLevelSheet(items, onSelect, title) {
+    // Remove any existing sheet
+    document.getElementById('_lsheet')?.remove();
+
+    const sheet = document.createElement('div');
+    sheet.id = '_lsheet';
+
+    const listHtml = items.map(it => `
+      <button class="lsheet-item" data-idx="${it.index ?? 0}" type="button">
+        <span class="lsheet-word">${esc(it.label)}</span>
+        ${it.translation ? `<span class="lsheet-trans">${esc(it.translation)}</span>` : ''}
+      </button>`).join('');
+
+    sheet.innerHTML = `
+      <div class="lsheet-backdrop"></div>
+      <div class="lsheet-panel">
+        <div class="lsheet-header">
+          <span class="lsheet-title">${esc(title)}</span>
+          <button class="lsheet-close icon-btn" type="button" aria-label="Close">✕</button>
+        </div>
+        <div class="lsheet-body">${listHtml}</div>
+      </div>`;
+
+    document.body.appendChild(sheet);
+
+    const close = () => sheet.remove();
+    sheet.querySelector('.lsheet-backdrop').addEventListener('click', close);
+    sheet.querySelector('.lsheet-close').addEventListener('click', close);
+    sheet.querySelectorAll('.lsheet-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        onSelect(parseInt(btn.dataset.idx, 10));
+        close();
+      });
+    });
+  }
+
+  window.SharedApp = { openModal, closeModal, getSaved, setSaved, getMeta, setMeta, setSaveBtnState, wireSaveButtons, initSavedModal, initSearchModal, registerPageItems, openLevelSheet };
   window.wireSaveButtons = wireSaveButtons;
 
   // Ensure drawer is always treated as top-most overlay

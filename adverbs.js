@@ -4,6 +4,22 @@ import adverbsA2 from './js/adverbs-db-a2.js';
 import adverbsB1 from './js/adverbs-db-b1.js';
 import adverbsB2 from './js/adverbs-db-b2.js';
 import adverbsC1 from './js/adverbs-db-c1.js';
+// Cross-page DB imports so global search works from this page without needing to visit others first
+import verbsA1 from './js/verbs-db-a1.js';
+import verbsA2 from './js/verbs-db-a2.js';
+import verbsB1 from './js/verbs-db-b1.js';
+import verbsB2 from './js/verbs-db-b2.js';
+import verbsC1 from './js/verbs-db-c1.js';
+import nounsA1 from './js/nouns-db-a1.js';
+import nounsA2 from './js/nouns-db-a2.js';
+import nounsB1 from './js/nouns-db-b1.js';
+import nounsB2 from './js/nouns-db-b2.js';
+import nounsC1 from './js/nouns-db-c1.js';
+import adjectivesA1 from './js/adjectives-db-a1.js';
+import adjectivesA2 from './js/adjectives-db-a2.js';
+import adjectivesB1 from './js/adjectives-db-b1.js';
+import adjectivesB2 from './js/adjectives-db-b2.js';
+import adjectivesC1 from './js/adjectives-db-c1.js';
 import { initFocusMode } from './focus-mode.js';
 
 const DB = { a1: adverbsA1, a2: adverbsA2, b1: adverbsB1, b2: adverbsB2, c1: adverbsC1 };
@@ -28,10 +44,32 @@ function buildAllPageItems(){
   return Object.keys(DB).flatMap(l => buildPageItems(l));
 }
 
+function buildCrossPageItems() {
+  const verbDB = { a1: verbsA1, a2: verbsA2, b1: verbsB1, b2: verbsB2, c1: verbsC1 };
+  const nounDB = { a1: nounsA1, a2: nounsA2, b1: nounsB1, b2: nounsB2, c1: nounsC1 };
+  const adjDB  = { a1: adjectivesA1, a2: adjectivesA2, b1: adjectivesB1, b2: adjectivesB2, c1: adjectivesC1 };
+
+  const verbs = Object.keys(verbDB).flatMap(l => (verbDB[l]||[]).map((v,i) => ({
+    id: `verbs:${l}:${v.base||v.infinitive||v.word||''}`,
+    label: v.base||v.infinitive||v.word||'—',
+    translation: ((v.translations||v.meanings||[])[0])||'',
+    index: i, level: l, category: 'Verbs', url: 'index.html',
+  })));
+  const nouns = Object.keys(nounDB).flatMap(l => (nounDB[l]||[]).map((n,i) => ({
+    id: `nouns:${l}:${n.word}`, label: n.word||'—', translation: (n.translations||[])[0]||'',
+    index: i, level: l, category: 'Nouns', url: 'nouns.html',
+  })));
+  const adjs = Object.keys(adjDB).flatMap(l => (adjDB[l]||[]).map((a,i) => ({
+    id: `adjectives:${l}:${a.word}`, label: a.word||'—', translation: (a.translations||[])[0]||'',
+    index: i, level: l, category: 'Adjectives', url: 'adjectives.html',
+  })));
+  return [...verbs, ...nouns, ...adjs];
+}
+
 renderCurrent();
 updateCounts();
 buildAllDropdowns();
-registerPageItems(buildAllPageItems());
+registerPageItems([...buildAllPageItems(), ...buildCrossPageItems()]);
 initSearchModal((item) => {
   if (item.level !== currentLevel) {
     const btn = document.querySelector(`.level-btn[data-level="${item.level}"]`);
@@ -42,35 +80,22 @@ initSearchModal((item) => {
 
 levelBtns.forEach(btn => {
   btn.addEventListener('click', (e) => {
-    // If tapping inside dropdown, let dropdown-item handler run
-    if (e.target && e.target.closest && e.target.closest('.level-dropdown')) return;
-
     const level = btn.dataset.level;
-    const isActive = btn.classList.contains('active');
 
-    // Close other dropdowns
-    levelBtns.forEach(b => { if (b !== btn) b.classList.remove('open'); });
-
-    // On mobile: tap active level toggles dropdown open/close
-    if (isActive) {
-      btn.classList.toggle('open');
-      return;
+    if (!btn.classList.contains('active')) {
+      levelBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLevel = level;
+      renderCurrent();
     }
 
-    // Switch level and open its list
-    levelBtns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentLevel = level;
-    renderCurrent();
-    btn.classList.add('open');
+    const items = buildPageItems(level);
+    window.SharedApp.openLevelSheet(
+      items,
+      (idx) => { if (level !== currentLevel) { currentLevel = level; renderCurrent(); } setTimeout(() => focusApi?.jumpTo(idx), 40); },
+      `${level.toUpperCase()} — ${items.length} adverbs`
+    );
   });
-});
-
-// Close dropdown when tapping outside
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.level-section')) {
-    levelBtns.forEach(b => b.classList.remove('open'));
-  }
 });
 
 

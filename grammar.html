@@ -91,9 +91,8 @@
 
     .grammar-card-head {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
+      flex-direction: column;
+      gap: 6px;
       margin-bottom: 10px;
     }
 
@@ -101,6 +100,7 @@
       font-size: 1.2rem;
       font-weight: 800;
       line-height: 1.3;
+      width: 100%;
     }
 
     .grammar-meta {
@@ -308,21 +308,21 @@
       <!-- Sticky level + filter bar -->
       <div class="level-section level-section--sticky" id="grammarTopBar">
         <div class="grammar-topbar-row">
-          <!-- Level buttons (same pattern as word pages) -->
-          <div class="level-buttons" id="levelButtons">
-            <button class="level-btn active" data-level="ALL"><span class="level-badge">All</span><span class="level-count" id="count-all">36</span></button>
-            <button class="level-btn" data-level="A1"><span class="level-badge">A1</span><span class="level-count" id="count-a1">0</span></button>
-            <button class="level-btn" data-level="A2"><span class="level-badge">A2</span><span class="level-count" id="count-a2">0</span></button>
-            <button class="level-btn" data-level="B1"><span class="level-badge">B1</span><span class="level-count" id="count-b1">0</span></button>
-            <button class="level-btn" data-level="B2"><span class="level-badge">B2</span><span class="level-count" id="count-b2">0</span></button>
-            <button class="level-btn" data-level="C1"><span class="level-badge">C1</span><span class="level-count" id="count-c1">0</span></button>
-            <button class="level-btn" data-level="C2"><span class="level-badge">C2</span><span class="level-count" id="count-c2">0</span></button>
+          <!-- Level buttons scroll independently -->
+          <div class="grammar-level-scroll">
+            <div class="level-buttons" id="levelButtons">
+              <button class="level-btn active" data-level="ALL"><span class="level-badge">All</span><span class="level-count" id="count-all">36</span></button>
+              <button class="level-btn" data-level="A1"><span class="level-badge">A1</span><span class="level-count" id="count-a1">0</span></button>
+              <button class="level-btn" data-level="A2"><span class="level-badge">A2</span><span class="level-count" id="count-a2">0</span></button>
+              <button class="level-btn" data-level="B1"><span class="level-badge">B1</span><span class="level-count" id="count-b1">0</span></button>
+              <button class="level-btn" data-level="B2"><span class="level-badge">B2</span><span class="level-count" id="count-b2">0</span></button>
+              <button class="level-btn" data-level="C1"><span class="level-badge">C1</span><span class="level-count" id="count-c1">0</span></button>
+              <button class="level-btn" data-level="C2"><span class="level-badge">C2</span><span class="level-count" id="count-c2">0</span></button>
+            </div>
           </div>
 
-          <div class="grammar-topbar-separator"></div>
-
-          <!-- Collapsed filter dropdowns -->
-          <div class="grammar-filters" id="grammarFilters">
+          <!-- Filter dropdowns fixed — always visible on the right -->
+          <div class="grammar-filters-fixed" id="grammarFilters">
             <!-- Filled by JS -->
           </div>
         </div>
@@ -383,12 +383,33 @@
         activeTopic = 'ALL'; activeTag = 'ALL';
         rebuildFilters();
         applyFilters(0);
+
+        // Open bottom sheet with topics for this level
+        const pool = activeLevel==='ALL' ? TOPICS : TOPICS.filter(t=>t.level===activeLevel);
+        const sheetItems = pool.map((t, i) => ({
+          label: t.title,
+          translation: t.tags ? t.tags.join(', ') : '',
+          index: filteredList.indexOf(t) >= 0 ? filteredList.indexOf(t) : i,
+        }));
+        // Re-apply filters first then open sheet with correct indices
+        const currentPool = filteredList.length ? filteredList : pool;
+        const items = currentPool.map((t, i) => ({
+          label: t.title,
+          translation: (t.tags||[]).join(', '),
+          index: i,
+        }));
+        window.SharedApp?.openLevelSheet(
+          items,
+          (idx) => { currentIdx = idx; renderCard(); updateDrawer(); },
+          `${activeLevel === 'ALL' ? 'All' : activeLevel} — ${items.length} topics`
+        );
       });
 
       /* ===== Build filter dropdowns (Topics + Tags) ===== */
       function rebuildFilters(){
         const pool = activeLevel==='ALL' ? TOPICS : TOPICS.filter(t=>t.level===activeLevel);
         const container = document.getElementById('grammarFilters');
+        if (!container) return;
         container.innerHTML = '';
 
         // Topics dropdown
@@ -480,11 +501,11 @@
         cont.innerHTML = `
           <div class="grammar-card">
             <div class="grammar-card-head">
-              <h2 class="grammar-title">${esc(t.title)}</h2>
               <div class="grammar-meta">
                 <span class="gtag">${esc(t.level)}</span>
                 ${(t.tags||[]).map(tag=>`<span class="gtag">${esc(tag)}</span>`).join('')}
               </div>
+              <h2 class="grammar-title">${esc(t.title)}</h2>
             </div>
 
             <p class="grammar-summary">${esc(t.summary)}</p>
