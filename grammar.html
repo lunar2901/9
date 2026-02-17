@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>German Grammar</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇩🇪</text></svg>">
+  <style>
+    /* Grammar-specific styles */
+    :root { --gborder: rgba(0,0,0,.09); --gpanel: rgba(0,0,0,.035); }
+
+    /* Filter bar (topics + tags dropdowns) — now inline with level buttons */
+    .grammar-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      margin: 0;
+    }
+    .grammar-filters::-webkit-scrollbar { display: none; }
+
+    .gf-item {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .gf-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border: 1.5px solid var(--gborder);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color .15s, background .15s;
+    }
+    .gf-btn.active-filter { border-color: #111; background: #f5f5f5; }
+    .gf-btn .gf-arrow { font-size: 9px; opacity: .5; transition: transform .2s; }
+    .gf-item.open .gf-arrow { transform: rotate(180deg); }
+
+    .gf-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      z-index: 400;
+      background: #fff;
+      border: 1px solid var(--gborder);
+      border-radius: 12px;
+      min-width: 200px;
+      max-height: 320px;
+      overflow-y: auto;
+      box-shadow: 0 8px 28px rgba(0,0,0,.12);
+      display: none;
+      padding: 6px 0;
+    }
+    .gf-item.open .gf-dropdown { display: block; }
+
+    .gf-option {
+      display: block;
+      width: 100%;
+      padding: 8px 14px;
+      border: none;
+      background: none;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .gf-option:hover { background: #f5f5f5; }
+    .gf-option.selected { font-weight: 800; }
+    .gf-option .gf-count { font-size: 11px; color: #aaa; }
+
+    /* Grammar card (one at a time) */
+    .grammar-card {
+      border: 1px solid var(--gborder);
+      border-radius: 18px;
+      background: #fff;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.06);
+    }
+
+    .grammar-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .grammar-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .grammar-meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .gtag {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--gborder);
+      font-size: 11px;
+      white-space: nowrap;
+      background: var(--gpanel);
+      font-weight: 700;
+    }
+
+    .grammar-summary {
+      color: #555;
+      font-size: .95rem;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .grammar-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .grammar-sec {
+      border: 1px solid var(--gborder);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .grammar-sec summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 10px 14px;
+      font-weight: 800;
+      font-size: .9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--gpanel);
+      user-select: none;
+    }
+    .grammar-sec summary::-webkit-details-marker { display: none; }
+    .grammar-sec summary::after { content: '▾'; font-size: 12px; opacity: .5; transition: transform .2s; }
+    .grammar-sec[open] summary::after { transform: rotate(180deg); }
+
+    .grammar-sec-body {
+      padding: 12px 14px;
+      font-size: .9rem;
+      line-height: 1.7;
+    }
+
+    .grammar-sec-body .box {
+      padding: 10px 14px;
+      background: var(--gpanel);
+      border-radius: 10px;
+      border: 1px solid var(--gborder);
+    }
+    .grammar-sec-body p { margin: .3rem 0; }
+    .grammar-sec-body ul,
+    .grammar-sec-body ol { margin: .4rem 0 .2rem 1.3rem; }
+    .grammar-sec-body strong { font-weight: 800; }
+
+    .grammar-table { width: 100%; border-collapse: collapse; margin-top: 8px; border-radius: 10px; overflow: hidden; }
+    .grammar-table th, .grammar-table td { border: 1px solid var(--gborder); padding: 7px 10px; vertical-align: top; font-size: .87rem; }
+    .grammar-table th { background: var(--gpanel); font-weight: 800; }
+
+    /* Nav row (prev / counter / next / save) */
+    .grammar-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .grammar-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border: 1.5px solid var(--gborder);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .grammar-nav-btn:hover { background: #f5f5f5; }
+    .grammar-nav-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+    .grammar-nav-counter {
+      flex: 1;
+      text-align: center;
+      font-size: 13px;
+      color: #888;
+      font-weight: 600;
+    }
+
+    .grammar-save-btn {
+      padding: 9px 16px;
+      border: 1.5px solid var(--gborder);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      font-weight: 900;
+    }
+    .grammar-save-btn.saved { border-color: #e53e3e; color: #e53e3e; }
+
+    .grammar-no-results {
+      text-align: center;
+      padding: 40px 20px;
+      color: #888;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="main-header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="13.33" fill="#000"/>
+            <rect y="13.33" width="40" height="13.33" fill="#DD0000"/>
+            <rect y="26.67" width="40" height="13.33" fill="#FFCE00"/>
+          </svg>
+          <h1>Grammar</h1>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" id="btnGlobalSearch" type="button" aria-label="Search">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+          </button>
+          <button class="icon-btn" id="btnSaved" type="button" aria-label="Saved words">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+          </button>
+          <button class="icon-btn menu-btn" type="button" aria-label="Menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="drawer-backdrop" hidden></div>
+  <aside class="drawer" hidden>
+    <div class="drawer-top">
+      <div class="drawer-title">Menu</div>
+      <button class="icon-btn drawer-close" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="drawer-link">🔤 Verbs</a>
+      <a href="nouns.html" class="drawer-link">📦 Nouns</a>
+      <a href="adjectives.html" class="drawer-link">🎨 Adjectives</a>
+      <a href="adverbs.html" class="drawer-link">💨 Adverbs</a>
+      <a href="practice.html" class="drawer-link">✅ Practice</a>
+      <a href="grammar.html" class="drawer-link drawer-link--active">📖 Grammar</a>
+    </nav>
+    <div class="drawer-section">
+      <div class="drawer-section-title">Review Progress</div>
+      <details class="drawer-acc">
+        <summary>✅ Learned</summary>
+        <div id="drawerLearnedList" class="drawer-list"></div>
+      </details>
+      <details class="drawer-acc">
+        <summary>📖 Not yet learned</summary>
+        <div id="drawerUnlearnedList" class="drawer-list"></div>
+      </details>
+    </div>
+  </aside>
+
+  <div class="modal" id="globalSearchModal" hidden>
+    <div class="modal__backdrop" data-close="globalSearchModal"></div>
+    <div class="modal__panel">
+      <div class="modal__top"><div class="modal__title">Search All Words</div><button class="icon-btn" data-close="globalSearchModal" aria-label="Close">✕</button></div>
+      <input id="globalSearchInput" class="modal__input" placeholder="Search all verbs, nouns, adjectives, adverbs…" />
+      <div id="globalSearchResults" class="modal__results"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="savedModal" hidden>
+    <div class="modal__backdrop" data-close="savedModal"></div>
+    <div class="modal__panel">
+      <div class="modal__top"><div class="modal__title">Saved Words</div><button class="icon-btn" data-close="savedModal" aria-label="Close">✕</button></div>
+      <div id="savedResults" class="modal__results"></div>
+    </div>
+  </div>
+
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Sticky level + filter bar -->
+      <div class="level-section level-section--sticky" id="grammarTopBar">
+        <div class="grammar-topbar-row">
+          <!-- Level buttons (same pattern as word pages) -->
+          <div class="level-buttons" id="levelButtons">
+            <button class="level-btn active" data-level="ALL"><span class="level-badge">All</span><span class="level-count" id="count-all">36</span></button>
+            <button class="level-btn" data-level="A1"><span class="level-badge">A1</span><span class="level-count" id="count-a1">0</span></button>
+            <button class="level-btn" data-level="A2"><span class="level-badge">A2</span><span class="level-count" id="count-a2">0</span></button>
+            <button class="level-btn" data-level="B1"><span class="level-badge">B1</span><span class="level-count" id="count-b1">0</span></button>
+            <button class="level-btn" data-level="B2"><span class="level-badge">B2</span><span class="level-count" id="count-b2">0</span></button>
+            <button class="level-btn" data-level="C1"><span class="level-badge">C1</span><span class="level-count" id="count-c1">0</span></button>
+            <button class="level-btn" data-level="C2"><span class="level-badge">C2</span><span class="level-count" id="count-c2">0</span></button>
+          </div>
+
+          <div class="grammar-topbar-separator"></div>
+
+          <!-- Collapsed filter dropdowns -->
+          <div class="grammar-filters" id="grammarFilters">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Single topic display -->
+      <section class="verbs-section" id="grammarContent">
+        <div id="grammarCard"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="main-footer"><div class="container"><p>&copy; 2026 German Learning App | Built with ❤️ for language learners</p></div></footer>
+
+  <script src="topics.js"></script>
+  <script src="shared.js"></script>
+  <script>
+    /* ===== Menu ===== */
+    const menuBtn=document.querySelector(".menu-btn"),drawer=document.querySelector(".drawer"),backdrop=document.querySelector(".drawer-backdrop"),closeBtn=document.querySelector(".drawer-close");
+    function openMenu(){drawer.hidden=false;backdrop.hidden=false;menuBtn?.setAttribute("aria-expanded","true");document.body.classList.add('drawer-open');}
+    function closeMenu(){drawer.hidden=true;backdrop.hidden=true;menuBtn?.setAttribute("aria-expanded","false");document.body.classList.remove('drawer-open');}
+    menuBtn?.addEventListener("click",openMenu);closeBtn?.addEventListener("click",closeMenu);backdrop?.addEventListener("click",closeMenu);
+    SharedApp.initSavedModal();
+    SharedApp.initSearchModal();
+  </script>
+  <script>
+    (function(){
+      if(!Array.isArray(window.TOPICS)){ document.getElementById('grammarCard').innerHTML='<div class="grammar-no-results">⚠️ topics.js not loaded.</div>'; return; }
+
+      const TOPICS = window.TOPICS;
+      const { getSaved, setSaved, getMeta, setMeta, registerPageItems } = window.SharedApp;
+
+      let activeLevel = 'ALL';
+      let activeTopic = 'ALL'; // topic filter: ALL or topic id
+      let activeTag   = 'ALL';
+      let filteredList = [];
+      let currentIdx  = 0;
+
+      /* ===== Level counts ===== */
+      function updateCounts(){
+        const counts = {};
+        TOPICS.forEach(t => { counts[t.level] = (counts[t.level]||0)+1; });
+        document.getElementById('count-all').textContent = TOPICS.length;
+        ['A1','A2','B1','B2','C1','C2'].forEach(l => {
+          const el = document.getElementById('count-'+l.toLowerCase());
+          if(el) el.textContent = counts[l]||0;
+        });
+      }
+
+      /* ===== Level buttons ===== */
+      document.getElementById('levelButtons').addEventListener('click', e => {
+        const btn = e.target.closest('.level-btn');
+        if(!btn) return;
+        document.querySelectorAll('#levelButtons .level-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeLevel = btn.dataset.level;
+        activeTopic = 'ALL'; activeTag = 'ALL';
+        rebuildFilters();
+        applyFilters(0);
+      });
+
+      /* ===== Build filter dropdowns (Topics + Tags) ===== */
+      function rebuildFilters(){
+        const pool = activeLevel==='ALL' ? TOPICS : TOPICS.filter(t=>t.level===activeLevel);
+        const container = document.getElementById('grammarFilters');
+        container.innerHTML = '';
+
+        // Topics dropdown
+        container.appendChild(makeDropdown('Topics', 'topic',
+          [{id:'ALL',label:'All Topics',count:pool.length},...pool.map(t=>({id:t.id,label:t.title,count:null}))],
+          activeTopic, id => { activeTopic=id; activeTag='ALL'; applyFilters(0); rebuildFilters(); }
+        ));
+
+        // Tags dropdown
+        const tagCounts = {};
+        pool.forEach(t=>(t.tags||[]).forEach(tag=>{ tagCounts[tag]=(tagCounts[tag]||0)+1; }));
+        const tags = Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]);
+        container.appendChild(makeDropdown('Tags', 'tag',
+          [{id:'ALL',label:'All Tags',count:pool.length},...tags.map(([tag,c])=>({id:tag,label:tag,count:c}))],
+          activeTag, id => { activeTag=id; activeTopic='ALL'; applyFilters(0); rebuildFilters(); }
+        ));
+      }
+
+      function makeDropdown(label, key, options, activeId, onChange){
+        const wrap = document.createElement('div');
+        wrap.className = 'gf-item';
+        const isFiltered = activeId !== 'ALL';
+        const activeLabel = isFiltered ? options.find(o=>o.id===activeId)?.label || label : label;
+        wrap.innerHTML = `
+          <button class="gf-btn${isFiltered?' active-filter':''}" type="button">
+            ${esc(activeLabel)} <span class="gf-arrow">▾</span>
+          </button>
+          <div class="gf-dropdown">
+            ${options.map(o=>`
+              <button class="gf-option${o.id===activeId?' selected':''}" data-id="${esc(o.id)}" type="button">
+                <span>${esc(o.label)}</span>
+                ${o.count!==null?`<span class="gf-count">${o.count}</span>`:''}
+              </button>
+            `).join('')}
+          </div>
+        `;
+        const btn = wrap.querySelector('.gf-btn');
+        const dd  = wrap.querySelector('.gf-dropdown');
+
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          // Close other open dropdowns
+          document.querySelectorAll('.gf-item.open').forEach(el=>{ if(el!==wrap) el.classList.remove('open'); });
+          wrap.classList.toggle('open');
+        });
+
+        dd.addEventListener('click', e => {
+          const opt = e.target.closest('.gf-option');
+          if(!opt) return;
+          wrap.classList.remove('open');
+          onChange(opt.dataset.id);
+        });
+
+        // Close on outside click
+        document.addEventListener('click', () => wrap.classList.remove('open'), {once:false});
+
+        return wrap;
+      }
+
+      /* ===== Apply filters & render ===== */
+      function applyFilters(targetIdx=0){
+        let pool = activeLevel==='ALL' ? TOPICS : TOPICS.filter(t=>t.level===activeLevel);
+        if(activeTopic!=='ALL') pool = pool.filter(t=>t.id===activeTopic);
+        if(activeTag!=='ALL') pool = pool.filter(t=>(t.tags||[]).includes(activeTag));
+        filteredList = pool;
+        currentIdx = Math.min(Math.max(0,targetIdx), filteredList.length-1);
+        renderCard();
+        updateDrawer();
+        // Register items for cross-page search
+        registerPageItems(filteredList.map((t,i)=>({
+          id:'grammar:'+t.id, label:t.title, translation:t.summary.slice(0,60),
+          url:'grammar.html', category:'Grammar', level:t.level
+        })));
+      }
+
+      /* ===== Render single card ===== */
+      function renderCard(){
+        const cont = document.getElementById('grammarCard');
+        if(!filteredList.length){
+          cont.innerHTML = '<div class="grammar-no-results">No topics match these filters.</div>';
+          return;
+        }
+
+        const t = filteredList[currentIdx];
+        const saveId = 'grammar:'+t.id;
+        const saved = getSaved().has(saveId);
+        const total = filteredList.length;
+
+        cont.innerHTML = `
+          <div class="grammar-card">
+            <div class="grammar-card-head">
+              <h2 class="grammar-title">${esc(t.title)}</h2>
+              <div class="grammar-meta">
+                <span class="gtag">${esc(t.level)}</span>
+                ${(t.tags||[]).map(tag=>`<span class="gtag">${esc(tag)}</span>`).join('')}
+              </div>
+            </div>
+
+            <p class="grammar-summary">${esc(t.summary)}</p>
+
+            <div class="grammar-sections">
+              ${t.deep?`<details class="grammar-sec"><summary>📘 Deep explanation</summary><div class="grammar-sec-body">${t.deep}</div></details>`:''}
+              ${t.examples?`<details class="grammar-sec" open><summary>💬 Examples</summary><div class="grammar-sec-body">${t.examples}</div></details>`:''}
+              ${t.mistakes?`<details class="grammar-sec"><summary>⚠️ Common mistakes</summary><div class="grammar-sec-body">${t.mistakes}</div></details>`:''}
+              ${t.practice?`<details class="grammar-sec"><summary>✏️ Mini practice</summary><div class="grammar-sec-body">${t.practice}</div></details>`:''}
+            </div>
+
+            <div class="grammar-nav">
+              <button class="grammar-nav-btn" id="gPrev" type="button" ${currentIdx===0?'disabled':''}>← Prev</button>
+              <span class="grammar-nav-counter">${currentIdx+1} / ${total}</span>
+              <button class="grammar-nav-btn" id="gNext" type="button" ${currentIdx>=total-1?'disabled':''}>Next →</button>
+              <button class="grammar-save-btn${saved?' saved':''}" id="gSave" type="button"
+                data-save-id="${esc(saveId)}"
+                data-save-label="${esc(t.title)}"
+                data-save-trans="${esc(t.summary.slice(0,60))}"
+                data-save-url="grammar.html"
+                data-save-cat="Grammar"
+                aria-label="Save">${saved?'♥':'♡'}</button>
+            </div>
+          </div>
+        `;
+
+        // Wire nav
+        document.getElementById('gPrev')?.addEventListener('click', () => { if(currentIdx>0){ currentIdx--; renderCard(); updateDrawer(); } });
+        document.getElementById('gNext')?.addEventListener('click', () => { if(currentIdx<filteredList.length-1){ currentIdx++; renderCard(); updateDrawer(); } });
+
+        // Wire save
+        const saveBtn = document.getElementById('gSave');
+        if(saveBtn){
+          saveBtn.addEventListener('click', () => {
+            const s = getSaved(); const m = getMeta();
+            if(s.has(saveId)){ s.delete(saveId); delete m[saveId]; }
+            else { s.add(saveId); m[saveId]={ label:t.title, translation:t.summary.slice(0,60), url:'grammar.html', category:'Grammar' }; }
+            setSaved(s); setMeta(m);
+            saveBtn.classList.toggle('saved', s.has(saveId));
+            saveBtn.textContent = s.has(saveId) ? '♥' : '♡';
+          });
+        }
+
+        // Keyboard nav
+        document.onkeydown = e => {
+          if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+          if(e.key==='ArrowLeft' && currentIdx>0){ currentIdx--; renderCard(); updateDrawer(); }
+          if(e.key==='ArrowRight' && currentIdx<filteredList.length-1){ currentIdx++; renderCard(); updateDrawer(); }
+        };
+      }
+
+      /* ===== Drawer review ===== */
+      function updateDrawer(){
+        const SEEN_KEY = 'grammarseen:'+activeLevel;
+        const seen = new Set(JSON.parse(localStorage.getItem(SEEN_KEY)||'[]'));
+        // Mark current as seen
+        const current = filteredList[currentIdx];
+        if(current){ seen.add(current.id); localStorage.setItem(SEEN_KEY, JSON.stringify([...seen])); }
+
+        const learned   = filteredList.filter(t=>seen.has(t.id));
+        const unlearned = filteredList.filter(t=>!seen.has(t.id));
+
+        const lh = document.getElementById('drawerLearnedList');
+        const uh = document.getElementById('drawerUnlearnedList');
+
+        if(lh) lh.innerHTML = learned.length
+          ? learned.map((t,i)=>`<button class="drawer-item" data-gidx="${filteredList.indexOf(t)}">${esc(t.title)}</button>`).join('')
+          : '<div class="drawer-empty">No topics read yet.</div>';
+
+        if(uh) uh.innerHTML = unlearned.length
+          ? unlearned.map(t=>`<button class="drawer-item" data-gidx="${filteredList.indexOf(t)}">${esc(t.title)}</button>`).join('')
+          : '<div class="drawer-empty">All topics read! 🎉</div>';
+
+        document.querySelectorAll('[data-gidx]').forEach(btn => {
+          btn.onclick = () => { currentIdx=parseInt(btn.dataset.gidx,10); renderCard(); updateDrawer(); };
+        });
+      }
+
+      function esc(s){ return String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
+
+      /* ===== Init ===== */
+      updateCounts();
+      rebuildFilters();
+      applyFilters(0);
+
+    })();
+  </script>
+</body>
+</html>
