@@ -44,10 +44,6 @@ function buildAllPageItems(){
   return Object.keys(DB).flatMap(l => buildPageItems(l));
 }
 
-function buildAllPageItems(){
-  return Object.keys(DB).flatMap(l => buildPageItems(l));
-}
-
 function buildCrossPageItems() {
   const verbDB = { a1: verbsA1, a2: verbsA2, b1: verbsB1, b2: verbsB2, c1: verbsC1 };
   const nounDB = { a1: nounsA1, a2: nounsA2, b1: nounsB1, b2: nounsB2, c1: nounsC1 };
