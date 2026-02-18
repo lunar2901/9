@@ -13,8 +13,18 @@
 
   let _pageItems = [];
 
+  // Register items belonging to THIS page — used to determine if a search result
+  // can be jumped to in-place vs needs a page navigation
   function registerPageItems(items) {
     _pageItems = items;
+    const idx = getIdx();
+    items.forEach(it => { idx[it.id] = it; });
+    setIdx(idx);
+  }
+
+  // Register extra items from OTHER pages into the search index only —
+  // does NOT update _pageItems so isHere stays correct
+  function registerSearchItems(items) {
     const idx = getIdx();
     items.forEach(it => { idx[it.id] = it; });
     setIdx(idx);
@@ -154,7 +164,8 @@
             onJump(it);
             closeModal('globalSearchModal');
           } else if (it.url) {
-            window.location.href = it.url;
+            // Encode level+index in URL hash so the target page can jump directly
+            window.location.href = `${it.url}#jump:${it.level}:${it.index}`;
           }
         });
 
@@ -241,7 +252,21 @@
     panel.style.width = `${panelWidth}px`;
   }
 
-  window.SharedApp = { openModal, closeModal, getSaved, setSaved, getMeta, setMeta, setSaveBtnState, wireSaveButtons, initSavedModal, initSearchModal, registerPageItems, openLevelSheet };
+  // Called by each page after its focusApi is ready — handles #jump:level:index from search nav
+  function handleJumpHash(getLevelFn, setLevelFn, getFocusApi) {
+    const hash = window.location.hash;
+    if (!hash.startsWith('#jump:')) return;
+    const parts = hash.slice(1).split(':'); // ['jump', level, index]
+    if (parts.length < 3) return;
+    const level = parts[1];
+    const index = parseInt(parts[2], 10);
+    // Clear hash so refreshing doesn't re-jump
+    history.replaceState(null, '', window.location.pathname);
+    // Switch level and jump
+    setLevelFn(level, index);
+  }
+
+  window.SharedApp = { openModal, closeModal, getSaved, setSaved, getMeta, setMeta, setSaveBtnState, wireSaveButtons, initSavedModal, initSearchModal, registerPageItems, registerSearchItems, openLevelSheet, handleJumpHash };
   window.wireSaveButtons = wireSaveButtons;
 
   // Ensure drawer is always treated as top-most overlay

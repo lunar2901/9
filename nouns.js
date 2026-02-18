@@ -28,7 +28,7 @@ const levelBtns = document.querySelectorAll('.level-btn');
 let currentLevel = 'a1';
 let focusApi = null;
 
-const { getSaved, setSaved, setSaveBtnState, initSearchModal, registerPageItems } = window.SharedApp;
+const { getSaved, setSaved, setSaveBtnState, initSearchModal, registerPageItems, registerSearchItems } = window.SharedApp;
 
 function getArticle(noun) {
   return noun.gender === 'm' ? 'der' : noun.gender === 'f' ? 'die' : noun.gender === 'n' ? 'das' : '';
@@ -60,7 +60,6 @@ function buildCrossPageItems() {
   const verbDB = { a1: verbsA1, a2: verbsA2, b1: verbsB1, b2: verbsB2, c1: verbsC1 };
   const adjDB  = { a1: adjectivesA1, a2: adjectivesA2, b1: adjectivesB1, b2: adjectivesB2, c1: adjectivesC1 };
   const advDB  = { a1: adverbsA1, a2: adverbsA2, b1: adverbsB1, b2: adverbsB2, c1: adverbsC1 };
-
   const verbs = Object.keys(verbDB).flatMap(l => (verbDB[l]||[]).map((v,i) => ({
     id: `verbs:${l}:${v.base||v.infinitive||v.word||''}`,
     label: v.base||v.infinitive||v.word||'—',
@@ -81,13 +80,27 @@ function buildCrossPageItems() {
 renderCurrent();
 updateCounts();
 buildAllDropdowns();
-registerPageItems([...buildAllPageItems(), ...buildCrossPageItems()]);
+registerPageItems(buildAllPageItems());
+registerSearchItems(buildCrossPageItems());
+
+// Handle cross-page search navigation (#jump:level:index)
+window.SharedApp.handleJumpHash(
+  () => currentLevel,
+  (level, index) => {
+    const btn = document.querySelector(`.level-btn[data-level="${level}"]`);
+    if (btn) { levelBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+    currentLevel = level; renderCurrent();
+    setTimeout(() => focusApi?.jumpTo(index), 80);
+  },
+  () => focusApi
+);
+
 initSearchModal((item) => {
   if (item.level !== currentLevel) {
     const btn = document.querySelector(`.level-btn[data-level="${item.level}"]`);
     if (btn) { levelBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
     currentLevel = item.level; renderCurrent();
-    setTimeout(() => focusApi?.jumpTo(item.index), 50);
+    setTimeout(() => focusApi?.jumpTo(item.index), 80);
   } else {
     focusApi?.jumpTo(item.index);
   }

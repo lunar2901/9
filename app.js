@@ -29,7 +29,7 @@ let currentLevel = 'a1';
 let focusApi = null;
 
 // Saved words via shared.js
-const { getSaved, setSaved, setSaveBtnState, wireSaveButtons, initSearchModal, registerPageItems } = window.SharedApp;
+const { getSaved, setSaved, setSaveBtnState, wireSaveButtons, initSearchModal, registerPageItems, registerSearchItems } = window.SharedApp;
 
 /* ========================= Styles (MUST be defined before first render) ========================= */
 
@@ -191,19 +191,29 @@ renderCurrent();
 updateCounts();
 buildAllDropdowns();
 
-// Register page items and init search for current level
-registerPageItems([...buildAllPageItems(), ...buildCrossPageItems()]);
+// Register only this page's items for in-page jumping; cross-page items go to index only
+registerPageItems(buildAllPageItems());
+registerSearchItems(buildCrossPageItems());
+// Handle cross-page search navigation (#jump:level:index)
+window.SharedApp.handleJumpHash(
+  () => currentLevel,
+  (level, index) => {
+    const btn = document.querySelector(`.level-btn[data-level="${level}"]`);
+    if (btn) { levelBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+    currentLevel = level;
+    renderCurrent();
+    setTimeout(() => focusApi?.jumpTo(index), 80);
+  },
+  () => focusApi
+);
+
 initSearchModal((item) => {
   if (item.level !== currentLevel) {
-    // Switch level silently — find and activate the button without .click()
     const btn = document.querySelector(`.level-btn[data-level="${item.level}"]`);
-    if (btn) {
-      levelBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    }
+    if (btn) { levelBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
     currentLevel = item.level;
     renderCurrent();
-    setTimeout(() => focusApi?.jumpTo(item.index), 50);
+    setTimeout(() => focusApi?.jumpTo(item.index), 80);
   } else {
     focusApi?.jumpTo(item.index);
   }
